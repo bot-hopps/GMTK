@@ -378,14 +378,14 @@
             <h2>小球参数</h2>
             <div class="param-group">
                 <label>数量</label>
-                <input type="number" id="numBalls" value="200" min="1" max="1000">
+                <input type="number" id="numBalls" value="200" min="1" max="10000">
             </div>
             
             <div class="param-group">
                 <label>半径范围</label>
                 <div class="range-inputs">
-                    <input type="number" id="minRadius" value="2" min="1" max="50" placeholder="最小">
-                    <input type="number" id="maxRadius" value="12" min="1" max="50" placeholder="最大">
+                    <input type="number" id="minRadius" value="2" min="1" max="500" placeholder="最小">
+                    <input type="number" id="maxRadius" value="12" min="1" max="500" placeholder="最大">
                 </div>
             </div>
             
@@ -416,7 +416,7 @@
             <h2>物理参数</h2>
             <div class="param-group">
                 <label>重力大小</label>
-                <input type="number" id="gravity" value="40" min="0" max="50" step="0.5">
+                <input type="number" id="gravity" value="40" min="0" max="500" step="0.5">
             </div>
             
             <div class="param-group">
@@ -426,7 +426,7 @@
             
             <div class="param-group">
                 <label>法线强度</label>
-                <input type="number" id="normalStrength" value="20" min="0" max="50" step="0.1">
+                <input type="number" id="normalStrength" value="20" min="0" max="500" step="0.1">
             </div>
             
             <div class="param-group">
@@ -1225,7 +1225,7 @@
             
             createBalls() {
                 this.balls = [];
-                const count = Math.min(this.params.numBalls, 1000);
+                const count = Math.min(this.params.numBalls, 10000);
                 
                 for (let i = 0; i < count; i++) {
                     const radius = this.params.minRadius + Math.random() * (this.params.maxRadius - this.params.minRadius);
