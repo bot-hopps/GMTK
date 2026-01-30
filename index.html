@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GMTK 工具集</title>
+    <style>
+        /* 基础样式 - 与泼溅贴图生成器保持一致 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            width: 100vw; height: 100vh; 
+            font-family: Arial, sans-serif; 
+            background: #f8f9fa; 
+            color: #333333; 
+        }
+        
+        /* 标题栏 */
+        .main-title {
+            text-align: center;
+            padding: 15px;
+            background: #ffffff;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 20px;
+            color: #495057;
+        }
+        
+        /* 主容器 */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 60px);
+            overflow: hidden;
+        }
+        
+        /* 工具列表 */
+        .tools-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        /* 工具卡片 */
+        .tool-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+        }
+        
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .tool-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        
+        .tool-description {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        
+        .tool-link {
+            display: inline-block;
+            padding: 8px 15px;
+            background: #6c757d;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .tool-link:hover {
+            background: #5a6268;
+        }
+        
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            padding: 15px;
+            background: #ffffff;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .tools-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-title">GMTK 工具集</div>
+    
+    <div class="app-container">
+        <div class="tools-container" id="toolsContainer">
+            <!-- 工具卡片将通过JavaScript动态生成 -->
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>GMTK 工具集 - 简单实用的在线工具集合</p>
+    </div>
+
+    <script>
+        // 工具数据配置 - 只需修改此数组即可添加新工具
+        const tools = [
+            {
+                name: "泼溅贴图生成器",
+                description: "基于物理模拟生成泼溅贴图，输出贴图结合时间信息，可用于展示动态的泼溅效果。",
+                link: "splash_map_generator.html",
+                color: "#6c757d"
+            },
+            {
+                name: "示例工具2",
+                description: "这是另一个工具的简要描述，您可以在这里添加更多工具。",
+                link: "#",
+                color: "#6c757d"
+            },
+            {
+                name: "示例工具3",
+                description: "这是第三个工具的简要描述，未来可以添加更多功能。",
+                link: "#",
+                color: "#6c757d"
+            }
+        ];
+
+        // 动态生成工具卡片
+        function renderTools() {
+            const container = document.getElementById('toolsContainer');
+            container.innerHTML = '';
+            
+            tools.forEach(tool => {
+                const toolCard = document.createElement('div');
+                toolCard.className = 'tool-card';
+                toolCard.innerHTML = `
+                    <div class="tool-title">${tool.name}</div>
+                    <div class="tool-description">${tool.description}</div>
+                    <a href="${tool.link}" class="tool-link" style="background: ${tool.color}">打开工具</a>
+                `;
+                container.appendChild(toolCard);
+            });
+        }
+
+        // 页面加载完成后渲染工具
+        document.addEventListener('DOMContentLoaded', renderTools);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>泼溅贴图生成器</title>
+    <style>
+        /* 基础样式 - 白色主题 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            width: 100vw; height: 100vh; 
+            font-family: Arial, sans-serif; 
+            background: #f8f9fa; 
+            color: #333333; 
+        }
+        
+        /* 简单标题 */
+        .main-title {
+            text-align: center;
+            padding: 10px;
+            background: #ffffff;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 18px;
+            color: #495057;
+        }
+        
+        /* 主容器 */
+        .app-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            grid-template-rows: 1fr;
+            height: calc(100vh - 50px);
+            overflow: hidden;
+        }
+        
+        /* 左栏：控制面板 */
+        .control-panel {
+            background: #ffffff;
+            padding: 15px;
+            overflow-y: auto;
+            border-right: 1px solid #dee2e6;
+        }
+        
+        /* 中栏：预览区域 */
+        .preview-area {
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            gap: 15px;
+            overflow: hidden;
+        }
+        
+        /* 右栏：输出面板 */
+        .output-panel {
+            background: #ffffff;
+            padding: 15px;
+            overflow-y: auto;
+            border-left: 1px solid #dee2e6;
+        }
+        
+        h2, h3 { color: #495057; margin-bottom: 10px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px; }
+        
+        /* 输入预览 */
+        .input-preview {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            height: 150px;
+        }
+        
+        .input-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .preview-canvas-container {
+            width: 150px;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .preview-canvas {
+            width: 150px;
+            height: 150px;
+            background: #e9ecef;
+            border: 2px solid #adb5bd;
+            border-radius: 4px;
+        }
+        
+        /* 主画布区域 */
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+            min-height: 0;
+        }
+        
+        /* 画布容器 */
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border-radius: 6px;
+            padding: 10px;
+            min-height: 0;
+            border: 1px solid #dee2e6;
+        }
+        
+        .canvas-label {
+            text-align: center;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        /* 画布内容 */
+        .canvas-content {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+        }
+        
+        .canvas-content canvas {
+            display: block;
+            background: #000000;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        /* 控制元素样式 */
+        .param-group {
+            margin: 10px 0;
+        }
+        
+        .param-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .param-group input[type="number"],
+        .param-group select {
+            width: 100%;
+            padding: 8px;
+            background: #ffffff;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            color: #495057;
+        }
+        
+        .range-inputs {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .range-inputs input {
+            flex: 1;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #6c757d;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #5a6268;
+        }
+        
+        button:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .control-buttons button {
+            flex: 1;
+        }
+        
+        /* 调试信息 */
+        .canvas-info {
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        /* 文件上传样式 - 支持拖拽 */
+        .file-input {
+            margin: 10px 0;
+            position: relative;
+        }
+        
+        .file-input input {
+            opacity: 0;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-label {
+            display: block;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px dashed #adb5bd;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            color: #495057;
+            transition: all 0.2s;
+        }
+        
+        .file-label:hover, .file-label.drag-over {
+            background: #e9ecef;
+            border-color: #6c757d;
+        }
+        
+        /* 统计信息 */
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .stat-value {
+            color: #495057;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        /* 日志区域 */
+        .log-area {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            border: 1px solid #dee2e6;
+        }
+        
+        /* 调试选项 */
+        .debug-options {
+            margin: 10px 0;
+        }
+        
+        .debug-options label {
+            display: block;
+            margin: 5px 0;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        /* 笔刷预览 */
+        .brush-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        .brush-preview {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #adb5bd;
+            border-radius: 4px;
+            background: #ffffff;
+            position: relative;
+        }
+        
+        .remove-brush {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 12px;
+            line-height: 16px;
+            text-align: center;
+            cursor: pointer;
+            display: none;
+        }
+        
+        .brush-preview:hover .remove-brush {
+            display: block;
+        }
+        
+        /* 竖屏模式适配 */
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                height: auto;
+                overflow-y: auto;
+            }
+            
+            .control-panel, .output-panel {
+                width: 100%;
+                height: auto;
+            }
+            
+            .preview-area {
+                width: 100%;
+                height: auto;
+                min-height: 80vh;
+            }
+            
+            .canvas-area {
+                flex-direction: column;
+            }
+            
+            .canvas-container {
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-title">泼溅贴图生成器</div>
+    
+    <div class="app-container">
+        <!-- 左栏：控制面板 -->
+        <div class="control-panel">
+            <h2>输入文件</h2>
+            <div class="file-input">
+                <input type="file" id="normalMapInput" accept="image/*">
+                <label class="file-label" for="normalMapInput" id="normalMapLabel">拖拽或点击上传法线贴图 (可选)</label>
+            </div>
+            <div class="file-input">
+                <input type="file" id="maskInput" accept="image/*">
+                <label class="file-label" for="maskInput" id="maskLabel">拖拽或点击上传Mask贴图 (必需)</label>
+            </div>
+            
+            <h2>笔刷设置</h2>
+            <div class="file-input">
+                <input type="file" id="brushInput" accept="image/*" multiple>
+                <label class="file-label" for="brushInput" id="brushLabel">拖拽或点击上传笔刷图片 (灰度图，可选)</label>
+            </div>
+            <div class="brush-preview-container" id="brushPreview"></div>
+            <button id="clearBrushes" style="padding: 5px; font-size: 12px;">清空笔刷</button>
+            
+            <h2>小球参数</h2>
+            <div class="param-group">
+                <label>数量</label>
+                <input type="number" id="numBalls" value="200" min="1" max="1000">
+            </div>
+            
+            <div class="param-group">
+                <label>半径范围</label>
+                <div class="range-inputs">
+                    <input type="number" id="minRadius" value="2" min="1" max="50" placeholder="最小">
+                    <input type="number" id="maxRadius" value="12" min="1" max="50" placeholder="最大">
+                </div>
+            </div>
+            
+            <div class="param-group">
+                <label>生命范围(秒)</label>
+                <div class="range-inputs">
+                    <input type="number" id="minLife" value="5" min="0.1" max="100" step="0.1" placeholder="最小">
+                    <input type="number" id="maxLife" value="10" min="0.1" max="100" step="0.1" placeholder="最大">
+                </div>
+            </div>
+            
+            <div class="param-group">
+                <label>初始速度范围</label>
+                <div class="range-inputs">
+                    <input type="number" id="minSpeed" value="0" min="0" max="50" step="0.5" placeholder="最小">
+                    <input type="number" id="maxSpeed" value="8" min="0" max="50" step="0.5" placeholder="最大">
+                </div>
+            </div>
+            
+            <div class="param-group">
+                <label>阻力系数范围</label>
+                <div class="range-inputs">
+                    <input type="number" id="minDrag" value="0.5" min="0" max="1" step="0.01" placeholder="最小">
+                    <input type="number" id="maxDrag" value="1" min="0" max="1" step="0.01" placeholder="最大">
+                </div>
+            </div>
+            
+            <h2>物理参数</h2>
+            <div class="param-group">
+                <label>重力大小</label>
+                <input type="number" id="gravity" value="40" min="0" max="50" step="0.5">
+            </div>
+            
+            <div class="param-group">
+                <label>重力方向(度)</label>
+                <input type="number" id="gravityAngle" value="90" min="0" max="360">
+            </div>
+            
+            <div class="param-group">
+                <label>法线强度</label>
+                <input type="number" id="normalStrength" value="20" min="0" max="50" step="0.1">
+            </div>
+            
+            <div class="param-group">
+                <label>时间步长(秒)</label>
+                <input type="number" id="timeStep" value="0.016" min="0.001" max="0.1" step="0.001">
+            </div>
+            
+            <h2>输出设置</h2>
+            <div class="param-group">
+                <label>输出尺寸</label>
+                <select id="outputSize">
+                    <option value="256">256×256</option>
+                    <option value="512">512×512</option>
+                    <option value="1024" selected>1024×1024</option>
+                    <option value="2048">2048×2048</option>
+                </select>
+            </div>
+            
+            <div class="control-buttons">
+                <button id="startBtn">开始模拟</button>
+                <button id="pauseBtn" disabled>暂停</button>
+                <button id="stopBtn" disabled>停止</button>
+                <button id="resetBtn" disabled>重置</button>
+            </div>
+            
+            <button id="exportBtn" disabled>导出PNG</button>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div>时间</div>
+                    <div class="stat-value" id="currentTime">0.0s</div>
+                </div>
+                <div class="stat-item">
+                    <div>小球</div>
+                    <div class="stat-value" id="activeBalls">0</div>
+                </div>
+                <div class="stat-item">
+                    <div>像素</div>
+                    <div class="stat-value" id="paintedPixels">0</div>
+                </div>
+                <div class="stat-item">
+                    <div>延迟小球</div>
+                    <div class="stat-value" id="delayedBalls">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 中栏：预览区域 -->
+        <div class="preview-area">
+            <!-- 输入预览 -->
+            <div>
+                <h3>输入预览</h3>
+                <div class="input-preview">
+                    <div class="input-item">
+                        <div>法线贴图</div>
+                        <div class="preview-canvas-container">
+                            <canvas id="normalCanvas"></canvas>
+                        </div>
+                    </div>
+                    <div class="input-item">
+                        <div>Mask贴图</div>
+                        <div class="preview-canvas-container">
+                            <canvas id="maskCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 主画布区域 -->
+            <div class="canvas-area">
+                <!-- 实时模拟 -->
+                <div class="canvas-container">
+                    <div class="canvas-label">实时模拟</div>
+                    <div class="canvas-content">
+                        <canvas id="simCanvas"></canvas>
+                    </div>
+                    <div class="canvas-info" id="simInfo">尺寸: 1024×1024</div>
+                </div>
+                
+                <!-- 最终输出 -->
+                <div class="canvas-container">
+                    <div class="canvas-label">最终泼溅贴图 (灰度: 255=最早, 1=最晚, 0=背景)</div>
+                    <div class="canvas-content">
+                        <canvas id="outputCanvas"></canvas>
+                    </div>
+                    <div class="canvas-info" id="outputInfo">尺寸: 1024×1024</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右栏：输出面板 -->
+        <div class="output-panel">
+            <h2>调试选项</h2>
+            <div class="debug-options">
+                <label><input type="checkbox" id="showBalls" checked> 显示小球</label>
+                <label><input type="checkbox" id="showTrails" checked> 显示轨迹</label>
+                <label><input type="checkbox" id="realtimePaint" checked> 实时绘制</label>
+                <label><input type="checkbox" id="showMaskBorder" checked> 显示Mask边界</label>
+                <label><input type="checkbox" id="showDelayedBalls" checked> 显示延迟小球</label>
+                <label><input type="checkbox" id="useBrushes" checked> 使用笔刷</label>
+            </div>
+            
+            <h2>笔刷参数</h2>
+            <div class="param-group">
+                <label>笔刷大小缩放</label>
+                <input type="range" id="brushScaleFactor" min="0.1" max="3" step="0.1" value="1">
+                <span id="brushScaleValue">1.0</span>
+            </div>
+            
+            <div class="param-group">
+                <label>笔刷旋转范围(度)</label>
+                <div class="range-inputs">
+                    <input type="number" id="minRotation" value="0" min="0" max="360" placeholder="最小">
+                    <input type="number" id="maxRotation" value="360" min="0" max="360" placeholder="最大">
+                </div>
+            </div>
+            
+            <h2>日志</h2>
+            <div class="log-area" id="logArea">
+                <div>准备就绪</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SplashMapGenerator {
+            constructor() {
+                this.setupCanvas();
+                this.setupDefaults();
+                this.setupEventListeners();
+                this.log("工具已初始化");
+            }
+            
+            setupCanvas() {
+                this.normalCanvas = document.getElementById('normalCanvas');
+                this.normalCtx = this.normalCanvas.getContext('2d');
+                this.maskCanvas = document.getElementById('maskCanvas');
+                this.maskCtx = this.maskCanvas.getContext('2d');
+                this.simCanvas = document.getElementById('simCanvas');
+                this.simCtx = this.simCanvas.getContext('2d');
+                this.outputCanvas = document.getElementById('outputCanvas');
+                this.outputCtx = this.outputCanvas.getContext('2d');
+                this.brushPreviewContainer = document.getElementById('brushPreview');
+                
+                // 设置预览画布尺寸
+                this.normalCanvas.width = 150;
+                this.normalCanvas.height = 150;
+                this.maskCanvas.width = 150;
+                this.maskCanvas.height = 150;
+                
+                this.drawDefaultNormal();
+            }
+            
+            drawDefaultNormal() {
+                const ctx = this.normalCtx;
+                ctx.fillStyle = '#808080'; // 灰色
+                ctx.fillRect(0, 0, 150, 150);
+                ctx.fillStyle = '#cccccc'; // 浅灰色
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('默认法线', 75, 75);
+            }
+            
+            setupDefaults() {
+                this.normalImage = null;
+                this.maskImage = null;
+                this.normalData = null;
+                this.maskData = null;
+                this.brushes = []; // 存储canvas元素
+                this.brushData = []; // 存储ImageData
+                this.brushRotatedCache = new Map(); // 简单的旋转缓存
+                
+                this.balls = [];
+                this.simulationTime = 0;
+                this.isSimulating = false;
+                this.animationId = null;
+                this.maxLife = 10;
+                
+                this.splashData = null;
+                this.splashPixelSet = null;
+                
+                this.params = {
+                    numBalls: 200,
+                    minRadius: 2,
+                    maxRadius: 12,
+                    minLife: 5,
+                    maxLife: 10,
+                    minSpeed: 0,
+                    maxSpeed: 8,
+                    minDrag: 0.5,
+                    maxDrag: 1,
+                    gravity: 40,
+                    gravityAngle: 90,
+                    normalStrength: 20,
+                    timeStep: 0.016,
+                    outputSize: 1024,
+                    brushScaleFactor: 1, // 笔刷缩放因子
+                    minRotation: 0,
+                    maxRotation: 360
+                };
+                
+                this.debug = {
+                    showBalls: true,
+                    showTrails: true,
+                    realtimePaint: true,
+                    showMaskBorder: true,
+                    showDelayedBalls: true,
+                    useBrushes: true
+                };
+                
+                this.isMaskLoaded = false;
+                
+                // 创建默认笔刷
+                this.createDefaultBrush();
+                
+                // 初始化画布尺寸
+                this.updateCanvasSizes();
+            }
+            
+            // 创建默认笔刷（圆形）
+            createDefaultBrush() {
+                const size = 24;
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                
+                // 绘制圆形笔刷 - 灰色渐变
+                const gradient = ctx.createRadialGradient(
+                    size/2, size/2, 0,
+                    size/2, size/2, size/2
+                );
+                gradient.addColorStop(0, '#ffffff'); // 白色
+                gradient.addColorStop(1, '#000000'); // 黑色
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                const brushData = ctx.getImageData(0, 0, size, size);
+                this.brushes.push(canvas);
+                this.brushData.push(brushData);
+                
+                this.updateBrushPreview();
+            }
+            
+            updateBrushPreview() {
+                this.brushPreviewContainer.innerHTML = '';
+                
+                this.brushes.forEach((brushCanvas, index) => {
+                    const previewWrapper = document.createElement('div');
+                    previewWrapper.className = 'brush-preview';
+                    previewWrapper.style.position = 'relative';
+                    
+                    const previewCanvas = document.createElement('canvas');
+                    previewCanvas.width = 40;
+                    previewCanvas.height = 40;
+                    const ctx = previewCanvas.getContext('2d');
+                    
+                    // 绘制笔刷预览
+                    ctx.drawImage(brushCanvas, 0, 0, 40, 40);
+                    
+                    // 添加删除按钮（如果不是默认笔刷）
+                    if (index > 0 || this.brushes.length > 1) {
+                        const removeBtn = document.createElement('div');
+                        removeBtn.className = 'remove-brush';
+                        removeBtn.textContent = '×';
+                        removeBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.removeBrush(index);
+                        });
+                        previewWrapper.appendChild(removeBtn);
+                    }
+                    
+                    previewWrapper.appendChild(previewCanvas);
+                    this.brushPreviewContainer.appendChild(previewWrapper);
+                });
+            }
+            
+            removeBrush(index) {
+                if (this.brushes.length <= 1) {
+                    this.log("至少需要保留一个笔刷", 'warning');
+                    return;
+                }
+                
+                this.brushes.splice(index, 1);
+                this.brushData.splice(index, 1);
+                this.updateBrushPreview();
+                this.log(`已删除笔刷 ${index}`);
+            }
+            
+            // 简单的旋转笔刷函数
+            rotateBrush(brushIndex, angle) {
+                const cacheKey = `${brushIndex}_${Math.round(angle)}`;
+                
+                if (this.brushRotatedCache.has(cacheKey)) {
+                    return this.brushRotatedCache.get(cacheKey);
+                }
+                
+                const original = this.brushData[brushIndex];
+                const size = original.width;
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                
+                // 应用旋转
+                ctx.translate(size/2, size/2);
+                ctx.rotate(angle);
+                ctx.translate(-size/2, -size/2);
+                
+                // 绘制笔刷
+                ctx.putImageData(original, 0, 0);
+                
+                const rotated = ctx.getImageData(0, 0, size, size);
+                this.brushRotatedCache.set(cacheKey, rotated);
+                
+                return rotated;
+            }
+            
+            setupEventListeners() {
+                // 文件上传 - 拖拽支持
+                this.setupFileDragAndDrop('normalMapLabel', 'normalMapInput');
+                this.setupFileDragAndDrop('maskLabel', 'maskInput');
+                this.setupFileDragAndDrop('brushLabel', 'brushInput');
+                
+                // 文件上传点击事件
+                document.getElementById('normalMapInput').addEventListener('change', (e) => this.loadImage(e, 'normal'));
+                document.getElementById('maskInput').addEventListener('change', (e) => this.loadImage(e, 'mask'));
+                document.getElementById('brushInput').addEventListener('change', (e) => this.loadBrushes(e));
+                
+                // 清空笔刷按钮
+                document.getElementById('clearBrushes').addEventListener('click', () => {
+                    this.clearAllBrushes();
+                });
+                
+                // 参数绑定
+                const paramIds = [
+                    'numBalls', 'minRadius', 'maxRadius', 'minLife', 'maxLife',
+                    'minSpeed', 'maxSpeed', 'minDrag', 'maxDrag', 'gravity',
+                    'gravityAngle', 'normalStrength', 'timeStep'
+                ];
+                
+                paramIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.addEventListener('change', () => {
+                            this.params[id] = parseFloat(el.value);
+                            if (id === 'maxLife') {
+                                this.maxLife = this.params.maxLife;
+                            }
+                        });
+                    }
+                });
+                
+                // 笔刷参数
+                document.getElementById('brushScaleFactor').addEventListener('input', (e) => {
+                    this.params.brushScaleFactor = parseFloat(e.target.value);
+                    document.getElementById('brushScaleValue').textContent = this.params.brushScaleFactor.toFixed(1);
+                });
+                
+                document.getElementById('minRotation').addEventListener('change', (e) => {
+                    this.params.minRotation = parseFloat(e.target.value);
+                });
+                
+                document.getElementById('maxRotation').addEventListener('change', (e) => {
+                    this.params.maxRotation = parseFloat(e.target.value);
+                });
+                
+                // 输出尺寸改变
+                document.getElementById('outputSize').addEventListener('change', (e) => {
+                    this.params.outputSize = parseInt(e.target.value);
+                    this.updateCanvasSizes();
+                    this.log(`输出尺寸已更改为: ${this.params.outputSize}×${this.params.outputSize}`);
+                    
+                    if (this.normalImage) this.extractNormalData();
+                    if (this.maskImage) this.extractMaskData();
+                    
+                    this.resetSimulation();
+                });
+                
+                // 调试选项 - 添加刷新画布功能
+                const debugOptions = [
+                    'showBalls', 'showTrails', 'realtimePaint', 
+                    'showMaskBorder', 'showDelayedBalls', 'useBrushes'
+                ];
+                
+                debugOptions.forEach(option => {
+                    document.getElementById(option).addEventListener('change', (e) => {
+                        this.debug[option] = e.target.checked;
+                        // 立即刷新画布
+                        this.updateDisplay();
+                    });
+                });
+                
+                // 控制按钮
+                document.getElementById('startBtn').addEventListener('click', () => this.startSimulation());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pauseSimulation());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stopSimulation());
+                document.getElementById('resetBtn').addEventListener('click', () => this.resetSimulation());
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportPNG());
+                
+                // 窗口大小变化
+                window.addEventListener('resize', () => {
+                    this.updateCanvasDisplaySizes();
+                });
+            }
+            
+            // 设置文件拖拽支持
+            setupFileDragAndDrop(labelId, inputId) {
+                const label = document.getElementById(labelId);
+                const input = document.getElementById(inputId);
+                
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    label.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+                
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    label.addEventListener(eventName, () => {
+                        label.classList.add('drag-over');
+                    });
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    label.addEventListener(eventName, () => {
+                        label.classList.remove('drag-over');
+                    });
+                });
+                
+                label.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer.files;
+                    
+                    if (files.length > 0) {
+                        // 创建新的FileList
+                        const dataTransfer = new DataTransfer();
+                        for (let i = 0; i < files.length; i++) {
+                            dataTransfer.items.add(files[i]);
+                        }
+                        
+                        // 设置input的files
+                        input.files = dataTransfer.files;
+                        
+                        // 触发change事件
+                        const event = new Event('change', { bubbles: true });
+                        input.dispatchEvent(event);
+                        
+                        this.log(`已拖拽${files.length}个文件到${label.textContent}`);
+                    }
+                });
+            }
+            
+            clearAllBrushes() {
+                if (this.brushes.length === 0) return;
+                
+                // 只保留第一个笔刷（默认笔刷）
+                this.brushes = [this.brushes[0]];
+                this.brushData = [this.brushData[0]];
+                this.brushRotatedCache.clear(); // 清除旋转缓存
+                this.updateBrushPreview();
+                this.log("已清空所有笔刷，保留默认笔刷");
+            }
+            
+            // 更新画布内部像素尺寸
+            updateCanvasSizes() {
+                const size = this.params.outputSize;
+                
+                this.simCanvas.width = size;
+                this.simCanvas.height = size;
+                this.outputCanvas.width = size;
+                this.outputCanvas.height = size;
+                
+                this.updateCanvasDisplaySizes();
+                
+                document.getElementById('simInfo').textContent = `尺寸: ${size}×${size}`;
+                document.getElementById('outputInfo').textContent = `尺寸: ${size}×${size}`;
+                
+                this.log(`画布尺寸已更新: ${size}×${size}`);
+            }
+            
+            // 更新画布显示尺寸
+            updateCanvasDisplaySizes() {
+                const simContainer = this.simCanvas.parentElement;
+                const outputContainer = this.outputCanvas.parentElement;
+                
+                const simWidth = simContainer.clientWidth;
+                const simHeight = simContainer.clientHeight;
+                const outputWidth = outputContainer.clientWidth;
+                const outputHeight = outputContainer.clientHeight;
+                
+                const simDisplaySize = Math.min(simWidth, simHeight);
+                const outputDisplaySize = Math.min(outputWidth, outputHeight);
+                
+                this.simCanvas.style.width = simDisplaySize + 'px';
+                this.simCanvas.style.height = simDisplaySize + 'px';
+                this.outputCanvas.style.width = outputDisplaySize + 'px';
+                this.outputCanvas.style.height = outputDisplaySize + 'px';
+            }
+            
+            log(message, type = 'info') {
+                const logArea = document.getElementById('logArea');
+                const time = new Date().toLocaleTimeString();
+                const div = document.createElement('div');
+                
+                if (type === 'error') {
+                    div.style.color = '#dc3545';
+                } else if (type === 'warning') {
+                    div.style.color = '#ffc107';
+                } else {
+                    div.style.color = '#495057';
+                }
+                
+                div.textContent = `[${time}] ${message}`;
+                logArea.appendChild(div);
+                logArea.scrollTop = logArea.scrollHeight;
+                
+                if (logArea.children.length > 50) {
+                    logArea.removeChild(logArea.firstChild);
+                }
+            }
+            
+            async loadImage(event, type) {
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
+                
+                const file = files[0];
+                
+                try {
+                    const img = new Image();
+                    img.src = URL.createObjectURL(file);
+                    
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                    });
+                    
+                    if (type === 'normal') {
+                        this.normalImage = img;
+                        this.drawPreviewImage(this.normalCtx, img, 150, 150);
+                        this.extractNormalData();
+                        this.log("法线贴图已加载");
+                    } else {
+                        this.maskImage = img;
+                        this.drawPreviewImage(this.maskCtx, img, 150, 150);
+                        this.extractMaskData();
+                        this.log("Mask贴图已加载");
+                    }
+                } catch (error) {
+                    this.log(`加载${type}贴图失败`, 'error');
+                }
+            }
+            
+            // 加载笔刷图片
+            async loadBrushes(event) {
+                const files = event.target.files;
+                if (!files.length) return;
+                
+                this.log(`开始加载 ${files.length} 个笔刷...`);
+                
+                // 清空旋转缓存
+                this.brushRotatedCache.clear();
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    try {
+                        const img = new Image();
+                        img.src = URL.createObjectURL(file);
+                        
+                        await new Promise((resolve, reject) => {
+                            img.onload = resolve;
+                            img.onerror = reject;
+                        });
+                        
+                        // 将笔刷转换为灰度并标准化大小
+                        const brushData = await this.processBrushImage(img);
+                        this.brushData.push(brushData);
+                        
+                        // 创建预览用的canvas
+                        const canvas = document.createElement('canvas');
+                        canvas.width = brushData.width;
+                        canvas.height = brushData.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.putImageData(brushData, 0, 0);
+                        this.brushes.push(canvas);
+                        
+                        this.log(`笔刷 ${i+1} 已加载`);
+                    } catch (error) {
+                        this.log(`加载笔刷 ${i+1} 失败`, 'error');
+                    }
+                }
+                
+                this.updateBrushPreview();
+                this.log(`已加载 ${files.length} 个笔刷`);
+            }
+            
+            // 处理笔刷图片：转换为灰度，标准化大小
+            async processBrushImage(img) {
+                return new Promise((resolve) => {
+                    const size = 24; // 标准笔刷大小
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 清空画布
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(0, 0, size, size);
+                    
+                    // 计算缩放比例，保持宽高比
+                    const imgWidth = img.width;
+                    const imgHeight = img.height;
+                    const scale = Math.min(size / imgWidth, size / imgHeight);
+                    const scaledWidth = imgWidth * scale;
+                    const scaledHeight = imgHeight * scale;
+                    const offsetX = (size - scaledWidth) / 2;
+                    const offsetY = (size - scaledHeight) / 2;
+                    
+                    // 绘制图片，保持宽高比
+                    ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+                    
+                    // 获取像素数据
+                    const imageData = ctx.getImageData(0, 0, size, size);
+                    const data = imageData.data;
+                    
+                    // 转换为灰度
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+                        
+                        // 计算灰度值
+                        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                        
+                        data[i] = gray;
+                        data[i + 1] = gray;
+                        data[i + 2] = gray;
+                    }
+                    
+                    ctx.putImageData(imageData, 0, 0);
+                    resolve(ctx.getImageData(0, 0, size, size));
+                });
+            }
+            
+            drawPreviewImage(ctx, img, width, height) {
+                // 清空画布
+                ctx.fillStyle = '#e9ecef';
+                ctx.fillRect(0, 0, width, height);
+                
+                // 计算缩放比例，保持图片宽高比
+                const imgWidth = img.width;
+                const imgHeight = img.height;
+                const scale = Math.min(width / imgWidth, height / imgHeight);
+                const scaledWidth = imgWidth * scale;
+                const scaledHeight = imgHeight * scale;
+                const offsetX = (width - scaledWidth) / 2;
+                const offsetY = (height - scaledHeight) / 2;
+                
+                ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+            }
+            
+            // 缩放图片到输出尺寸
+            resizeImageToOutput(img, outputSize) {
+                return new Promise((resolve) => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = outputSize;
+                    canvas.height = outputSize;
+                    
+                    ctx.drawImage(img, 0, 0, outputSize, outputSize);
+                    
+                    const imageData = ctx.getImageData(0, 0, outputSize, outputSize);
+                    resolve(imageData);
+                });
+            }
+            
+            async extractNormalData() {
+                if (!this.normalImage) return;
+                
+                try {
+                    this.normalData = await this.resizeImageToOutput(this.normalImage, this.params.outputSize);
+                    this.log(`法线贴图已缩放到 ${this.params.outputSize}×${this.params.outputSize}`);
+                } catch (error) {
+                    this.log(`法线贴图缩放失败: ${error}`, 'error');
+                }
+            }
+            
+            async extractMaskData() {
+                if (!this.maskImage) return;
+                
+                try {
+                    this.maskData = await this.resizeImageToOutput(this.maskImage, this.params.outputSize);
+                    this.isMaskLoaded = true;
+                    this.log(`Mask贴图已缩放到 ${this.params.outputSize}×${this.params.outputSize}`);
+                } catch (error) {
+                    this.log(`Mask贴图缩放失败: ${error}`, 'error');
+                }
+            }
+            
+            getNormal(x, y) {
+                if (!this.normalData) {
+                    return { x: 0, y: 0, z: 1 };
+                }
+                
+                const size = this.params.outputSize;
+                const ix = Math.max(0, Math.min(size - 1, Math.floor(x)));
+                const iy = Math.max(0, Math.min(size - 1, Math.floor(y)));
+                
+                const idx = (iy * size + ix) * 4;
+                const data = this.normalData.data;
+                
+                const nx = (data[idx] / 127.5) - 1;
+                const ny = -(data[idx + 1] / 127.5) + 1;
+                const nz = (data[idx + 2] / 127.5) - 1;
+                
+                const length = Math.sqrt(nx * nx + ny * ny + nz * nz);
+                if (length === 0) return { x: 0, y: 0, z: 1 };
+                
+                return { x: nx / length, y: ny / length, z: nz / length };
+            }
+            
+            // 获取mask灰度值
+            getMaskValue(x, y) {
+                if (!this.maskData) return 0;
+                
+                const size = this.params.outputSize;
+                const ix = Math.floor(x);
+                const iy = Math.floor(y);
+                
+                if (ix < 0 || iy < 0 || ix >= size || iy >= size) {
+                    return 0;
+                }
+                
+                const idx = (iy * size + ix) * 4;
+                return this.maskData.data[idx];
+            }
+            
+            // 只要mask值>0就可以生成
+            isInMask(x, y, radius = 0) {
+                if (!this.maskData) return false;
+                
+                const size = this.params.outputSize;
+                const ix = Math.floor(x);
+                const iy = Math.floor(y);
+                
+                if (ix < 0 || iy < 0 || ix >= size || iy >= size) {
+                    return false;
+                }
+                
+                if (radius === 0) {
+                    const idx = (iy * size + ix) * 4;
+                    return this.maskData.data[idx] > 0;
+                }
+                
+                const r = Math.ceil(radius);
+                for (let dy = -r; dy <= r; dy++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        if (dx * dx + dy * dy <= r * r) {
+                            const px = ix + dx;
+                            const py = iy + dy;
+                            
+                            if (px < 0 || py < 0 || px >= size || py >= size) {
+                                return false;
+                            }
+                            
+                            const idx = (py * size + px) * 4;
+                            if (this.maskData.data[idx] <= 0) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                
+                return true;
+            }
+            
+            findSpawnPosition(radius, maxAttempts = 100) {
+                const size = this.params.outputSize;
+                
+                for (let i = 0; i < maxAttempts; i++) {
+                    const x = radius + Math.random() * (size - 2 * radius);
+                    const y = radius + Math.random() * (size - 2 * radius);
+                    
+                    if (this.isInMask(x, y, radius)) {
+                        return { x, y };
+                    }
+                }
+                
+                return null;
+            }
+            
+            createBalls() {
+                this.balls = [];
+                const count = Math.min(this.params.numBalls, 1000);
+                
+                for (let i = 0; i < count; i++) {
+                    const radius = this.params.minRadius + Math.random() * (this.params.maxRadius - this.params.minRadius);
+                    const pos = this.findSpawnPosition(radius);
+                    
+                    if (!pos) continue;
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = this.params.minSpeed + Math.random() * (this.params.maxSpeed - this.params.minSpeed);
+                    const life = this.params.minLife + Math.random() * (this.params.maxLife - this.params.minLife);
+                    const drag = this.params.minDrag + Math.random() * (this.params.maxDrag - this.params.minDrag);
+                    
+                    // 获取mask灰度值
+                    const maskValue = this.getMaskValue(pos.x, pos.y);
+                    
+                    // 计算延迟
+                    const delay = ((255 - maskValue) / 255) * this.params.minLife;
+                    
+                    // 随机选择笔刷
+                    const brushIndex = Math.floor(Math.random() * this.brushData.length);
+                    
+                    // 随机旋转角度
+                    const rotation = (this.params.minRotation + 
+                        Math.random() * (this.params.maxRotation - this.params.minRotation)) * Math.PI / 180;
+                    
+                    this.balls.push({
+                        id: i,
+                        x: pos.x,
+                        y: pos.y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        radius: radius,
+                        life: life,
+                        maxLife: life,
+                        delay: delay,
+                        initialDelay: delay,
+                        drag: 1 - drag,
+                        active: delay <= 0,
+                        spawned: delay <= 0,
+                        brushIndex: brushIndex,
+                        rotation: rotation, // 笔刷旋转角度
+                        trail: []
+                    });
+                }
+                
+                this.log(`创建了 ${this.balls.length} 个小球`);
+            }
+            
+            // 使用笔刷绘制泼溅 - 修复笔刷大小问题
+            paintSplashWithBrush(ball, time) {
+                if (!this.debug.useBrushes || this.brushData.length === 0) {
+                    this.paintSplashCircle(ball, time);
+                    return;
+                }
+                
+                // 获取旋转后的笔刷
+                const brushData = this.rotateBrush(ball.brushIndex, ball.rotation);
+                const brushSize = brushData.width;
+                
+                const cx = Math.floor(ball.x);
+                const cy = Math.floor(ball.y);
+                const size = this.params.outputSize;
+                
+                // 计算基础颜色
+                const baseValue = Math.floor((1 - (time / this.maxLife)) * 254) + 1;
+                
+                // 计算笔刷半径 - 基于球半径和缩放因子
+                const brushRadius = Math.ceil(ball.radius * this.params.brushScaleFactor);
+                
+                for (let dy = -brushRadius; dy <= brushRadius; dy++) {
+                    for (let dx = -brushRadius; dx <= brushRadius; dx++) {
+                        if (dx * dx + dy * dy <= brushRadius * brushRadius) {
+                            // 计算在画布中的位置
+                            const px = cx + dx;
+                            const py = cy + dy;
+                            
+                            if (px < 0 || px >= size || py < 0 || py >= size) continue;
+                            
+                            // 计算在笔刷纹理中的位置
+                            const tx = Math.floor((dx + brushRadius) * (brushSize / (2 * brushRadius + 1)));
+                            const ty = Math.floor((dy + brushRadius) * (brushSize / (2 * brushRadius + 1)));
+                            
+                            if (tx < 0 || tx >= brushSize || ty < 0 || ty >= brushSize) continue;
+                            
+                            // 获取笔刷的alpha值
+                            const brushIdx = (ty * brushSize + tx) * 4;
+                            const brushAlpha = brushData.data[brushIdx] / 255;
+                            
+                            if (brushAlpha <= 0.01) continue;
+                            
+                            // 计算最终颜色值
+                            const finalValue = Math.floor(baseValue * brushAlpha);
+                            
+                            const idx = py * size + px;
+                            
+                            // 颜色更大的值覆盖颜色更小的值
+                            if (!this.splashPixelSet[idx] || finalValue > this.splashData[idx]) {
+                                this.splashData[idx] = finalValue;
+                                this.splashPixelSet[idx] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 使用圆形绘制泼溅
+            paintSplashCircle(ball, time) {
+                const r = Math.ceil(ball.radius);
+                const cx = Math.floor(ball.x);
+                const cy = Math.floor(ball.y);
+                const size = this.params.outputSize;
+                
+                const baseValue = Math.floor((1 - (time / this.maxLife)) * 254) + 1;
+                
+                for (let dy = -r; dy <= r; dy++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        if (dx * dx + dy * dy <= r * r) {
+                            const px = cx + dx;
+                            const py = cy + dy;
+                            
+                            if (px >= 0 && px < size || py >= 0 && py < size) {
+                                const idx = py * size + px;
+                                
+                                if (!this.splashPixelSet[idx] || baseValue > this.splashData[idx]) {
+                                    this.splashData[idx] = baseValue;
+                                    this.splashPixelSet[idx] = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            simulate(timestamp) {
+                if (!this.isSimulating) return;
+                
+                const dt = this.params.timeStep;
+                this.simulationTime += dt;
+                
+                const angle = this.params.gravityAngle * Math.PI / 180;
+                const gravityX = Math.cos(angle) * this.params.gravity;
+                const gravityY = Math.sin(angle) * this.params.gravity;
+                
+                let activeCount = 0;
+                let delayedCount = 0;
+                const size = this.params.outputSize;
+                
+                for (const ball of this.balls) {
+                    if (!ball.spawned) {
+                        ball.delay -= dt;
+                        if (ball.delay <= 0) {
+                            ball.active = true;
+                            ball.spawned = true;
+                        } else {
+                            delayedCount++;
+                            continue;
+                        }
+                    }
+                    
+                    if (!ball.active) continue;
+                    
+                    if (this.debug.showTrails) {
+                        ball.trail.push({ x: ball.x, y: ball.y });
+                        if (ball.trail.length > 20) {
+                            ball.trail.shift();
+                        }
+                    }
+                    
+                    ball.vx += gravityX * dt;
+                    ball.vy += gravityY * dt;
+                    
+                    const normal = this.getNormal(ball.x, ball.y);
+                    ball.vx += normal.x * this.params.normalStrength * dt;
+                    ball.vy += normal.y * this.params.normalStrength * dt;
+                    
+                    const resistance = ball.drag * dt;
+                    ball.vx -= ball.vx * resistance;
+                    ball.vy -= ball.vy * resistance;
+                    
+                    const newX = ball.x + ball.vx * dt;
+                    const newY = ball.y + ball.vy * dt;
+                    
+                    if (newX - ball.radius < 0 || newX + ball.radius >= size || 
+                        newY - ball.radius < 0 || newY + ball.radius >= size) {
+                        ball.active = false;
+                        ball.life = 0;
+                        continue;
+                    }
+                    
+                    ball.x = newX;
+                    ball.y = newY;
+                    
+                    this.paintSplashWithBrush(ball, this.simulationTime);
+                    
+                    ball.life -= dt;
+                    if (ball.life <= 0) {
+                        ball.active = false;
+                    } else {
+                        activeCount++;
+                    }
+                }
+                
+                this.updateDisplay();
+                this.updateStats(activeCount, delayedCount);
+                
+                if (this.simulationTime >= this.maxLife || (activeCount === 0 && delayedCount === 0)) {
+                    this.finishSimulation();
+                } else {
+                    this.animationId = requestAnimationFrame((ts) => this.simulate(ts));
+                }
+            }
+            
+            updateDisplay() {
+                const ctx = this.simCtx;
+                const size = this.params.outputSize;
+                
+                // 模拟画布保持黑色背景
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, size, size);
+                
+                if (this.splashPixelSet && this.debug.realtimePaint) {
+                    for (let y = 0; y < size; y++) {
+                        for (let x = 0; x < size; x++) {
+                            const idx = y * size + x;
+                            
+                            if (this.splashPixelSet[idx]) {
+                                const value = this.splashData[idx];
+                                
+                                ctx.fillStyle = `rgb(${value}, ${value}, ${value})`;
+                                ctx.fillRect(x, y, 1, 1);
+                            }
+                        }
+                    }
+                }
+                
+                if (this.debug.showMaskBorder && this.maskData) {
+                    ctx.strokeStyle = 'rgba(200, 200, 200, 0.3)';
+                    
+                    const step = 20;
+                    for (let y = 0; y < size; y += step) {
+                        for (let x = 0; x < size; x += step) {
+                            if (this.isInMask(x, y)) {
+                                ctx.strokeRect(x, y, step, step);
+                            }
+                        }
+                    }
+                }
+                
+                if (this.debug.showTrails) {
+                    for (const ball of this.balls) {
+                        if (!ball.spawned || ball.trail.length < 2) continue;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(ball.trail[0].x, ball.trail[0].y);
+                        
+                        for (let i = 1; i < ball.trail.length; i++) {
+                            ctx.lineTo(ball.trail[i].x, ball.trail[i].y);
+                        }
+                        
+                        const lifeRatio = ball.life / ball.maxLife;
+                        ctx.strokeStyle = `rgba(200, ${Math.floor(150 * lifeRatio)}, 0, 0.5)`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+                
+                if (this.debug.showBalls) {
+                    for (const ball of this.balls) {
+                        if (!ball.spawned && !this.debug.showDelayedBalls) continue;
+                        
+                        if (ball.active) {
+                            const lifeRatio = ball.life / ball.maxLife;
+                            ctx.beginPath();
+                            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                            ctx.fillStyle = `rgba(200, ${Math.floor(150 * lifeRatio)}, 0, 0.8)`;
+                            ctx.fill();
+                        } else if (!ball.spawned && this.debug.showDelayedBalls) {
+                            const delayRatio = 1 - (ball.delay / ball.initialDelay);
+                            ctx.beginPath();
+                            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                            ctx.fillStyle = `rgba(150, 150, 200, ${0.5 + delayRatio * 0.3})`;
+                            ctx.fill();
+                        }
+                    }
+                }
+            }
+            
+            updateStats(activeBalls, delayedBalls) {
+                document.getElementById('currentTime').textContent = this.simulationTime.toFixed(1) + 's';
+                document.getElementById('activeBalls').textContent = activeBalls;
+                document.getElementById('delayedBalls').textContent = delayedBalls;
+                
+                if (this.splashPixelSet) {
+                    let painted = 0;
+                    for (let i = 0; i < this.splashPixelSet.length; i++) {
+                        if (this.splashPixelSet[i]) painted++;
+                    }
+                    document.getElementById('paintedPixels').textContent = painted;
+                }
+            }
+            
+            startSimulation() {
+                if (!this.isMaskLoaded) {
+                    this.log("错误: 请先上传Mask贴图", 'error');
+                    alert("请先上传Mask贴图");
+                    return;
+                }
+                
+                this.log("开始模拟...");
+                
+                this.simulationTime = 0;
+                this.maxLife = this.params.maxLife;
+                const size = this.params.outputSize;
+                this.splashData = new Uint8Array(size * size);
+                this.splashPixelSet = new Uint8Array(size * size);
+                
+                this.createBalls();
+                
+                this.isSimulating = true;
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('resetBtn').disabled = false;
+                document.getElementById('exportBtn').disabled = true;
+                
+                this.animationId = requestAnimationFrame((ts) => this.simulate(ts));
+            }
+            
+            pauseSimulation() {
+                this.isSimulating = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                this.log("模拟已暂停");
+            }
+            
+            stopSimulation() {
+                this.isSimulating = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                
+                for (const ball of this.balls) {
+                    ball.active = false;
+                    ball.life = 0;
+                    ball.spawned = true;
+                }
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+                this.log("模拟已立即停止");
+                
+                this.finishSimulation();
+            }
+            
+            resetSimulation() {
+                this.stopSimulation();
+                this.simulationTime = 0;
+                this.balls = [];
+                this.splashData = null;
+                this.splashPixelSet = null;
+                
+                this.simCtx.fillStyle = '#000000';
+                this.simCtx.fillRect(0, 0, this.simCanvas.width, this.simCanvas.height);
+                
+                document.getElementById('currentTime').textContent = '0.0s';
+                document.getElementById('activeBalls').textContent = '0';
+                document.getElementById('delayedBalls').textContent = '0';
+                document.getElementById('paintedPixels').textContent = '0';
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('resetBtn').disabled = true;
+                
+                this.log("模拟已重置");
+            }
+            
+            finishSimulation() {
+                this.isSimulating = false;
+                this.generateOutputMap();
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('resetBtn').disabled = false;
+                document.getElementById('exportBtn').disabled = false;
+                
+                this.log("模拟完成");
+            }
+            
+            generateOutputMap() {
+                const size = this.params.outputSize;
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                
+                const imageData = ctx.createImageData(size, size);
+                const data = imageData.data;
+                
+                for (let i = 0; i < this.splashData.length; i++) {
+                    const value = this.splashData[i] || 0;
+                    
+                    const pixelIdx = i * 4;
+                    data[pixelIdx] = value;
+                    data[pixelIdx + 1] = value;
+                    data[pixelIdx + 2] = value;
+                    data[pixelIdx + 3] = 255;
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+                
+                this.outputCtx.clearRect(0, 0, this.outputCanvas.width, this.outputCanvas.height);
+                this.outputCtx.drawImage(canvas, 0, 0, this.outputCanvas.width, this.outputCanvas.height);
+            }
+            
+            exportPNG() {
+                const link = document.createElement('a');
+                link.download = 'splash_map.png';
+                link.href = this.outputCanvas.toDataURL('image/png');
+                link.click();
+                this.log("PNG已下载");
+            }
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            window.app = new SplashMapGenerator();
+        });
+    </script>
+</body>
+</html>
